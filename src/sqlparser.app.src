@@ -1,0 +1,9 @@
+{application, sqlparser, [
+    {description, "SQL Parser"},
+    {vsn, git},
+    {registered, []},
+    {applications, [
+        kernel,
+        stdlib
+    ]}
+]}.
