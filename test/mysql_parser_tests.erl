@@ -1,7 +1,7 @@
 -module(mysql_parser_tests).
 
 -include_lib("eunit/include/eunit.hrl").
--include("myproto.hrl").
+-include("sql.hrl").
 
 
 transaction_test() ->
