@@ -13,7 +13,7 @@ clean:
 test:
 	${REBAR} do xref, eunit, cover
 	./covertool \
-		-cover sqlparser.coverdata \
+		-cover _build/test/cover/eunit.coverdata \
 		-appname sqlparser \
 		-output cobertura.xml
 
