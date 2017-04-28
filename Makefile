@@ -11,7 +11,10 @@ clean:
 	rm -rf _build
 
 test:
-	${REBAR} eunit skip_deps=true
-	./covertool -cover sqlparser.coverdata -appname sqlparser -output cobertura.xml
+	${REBAR} do xref, eunit, cover
+	./covertool \
+		-cover sqlparser.coverdata \
+		-appname sqlparser \
+		-output cobertura.xml
 
 .PHONY: test compile clean all
