@@ -5,5 +5,8 @@
     {applications, [
         kernel,
         stdlib
-    ]}
+    ]},
+    {maintainers, ["Manuel Rubio"]},
+    {licenses, ["LGPL 2.1"]},
+    {links, [{"Github", "https://github.com/altenwald/sqlparser"}]}
 ]}.
