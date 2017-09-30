@@ -32,7 +32,7 @@ parse(Input) when is_binary(Input) ->
 
 -spec 'sql'(input(), index()) -> parse_result().
 'sql'(Input, Index) ->
-  p(Input, Index, 'sql', fun(I,D) -> (p_choose([fun 'set_query'/2, fun 'select_query'/2, fun 'update_query'/2, fun 'insert_query'/2, fun 'delete_query'/2, fun 'show_query'/2, fun 'desc_query'/2, fun 'use_query'/2, fun 'create_table_query'/2, fun 'transaction_query'/2, fun 'account_management_query'/2]))(I,D) end, fun(Node, _Idx) ->Node end).
+  p(Input, Index, 'sql', fun(I,D) -> (p_choose([fun 'set_query'/2, fun 'select_query'/2, fun 'update_query'/2, fun 'insert_query'/2, fun 'delete_query'/2, fun 'show_query'/2, fun 'desc_query'/2, fun 'use_query'/2, fun 'create_table_query'/2, fun 'drop_table_query'/2, fun 'transaction_query'/2, fun 'account_management_query'/2]))(I,D) end, fun(Node, _Idx) ->Node end).
 
 -spec 'transaction_query'(input(), index()) -> parse_result().
 'transaction_query'(Input, Index) ->
@@ -305,6 +305,12 @@ parse(Input) when is_binary(Input) ->
 'insert_set'(Input, Index) ->
   p(Input, Index, 'insert_set', fun(I,D) -> (p_seq([p_optional(fun 'space'/2), fun 'insert'/2, fun 'space'/2, fun 'into'/2, fun 'space'/2, fun 'table_general'/2, fun 'space'/2, fun 'set'/2, fun 'space'/2, fun 'sets'/2, p_optional(fun 'space'/2)]))(I,D) end, fun(Node, _Idx) ->
     #insert{table=lists:nth(6, Node), values=lists:nth(10, Node)}
+ end).
+
+-spec 'drop_table_query'(input(), index()) -> parse_result().
+'drop_table_query'(Input, Index) ->
+  p(Input, Index, 'drop_table_query', fun(I,D) -> (p_seq([p_optional(fun 'space'/2), fun 'drop_table'/2, fun 'space'/2, fun 'table_general'/2, p_optional(fun 'space'/2)]))(I,D) end, fun(Node, _Idx) ->
+    #drop_table{table = lists:nth(4, Node)}
  end).
 
 -spec 'create_table_query'(input(), index()) -> parse_result().
@@ -973,6 +979,10 @@ end
 -spec 'create_table'(input(), index()) -> parse_result().
 'create_table'(Input, Index) ->
   p(Input, Index, 'create_table', fun(I,D) -> (p_regexp(<<"(?i)create +table">>))(I,D) end, fun(_Node, _Idx) ->create_table end).
+
+-spec 'drop_table'(input(), index()) -> parse_result().
+'drop_table'(Input, Index) ->
+  p(Input, Index, 'drop_table', fun(I,D) -> (p_regexp(<<"(?i)drop +table">>))(I,D) end, fun(_Node, _Idx) ->drop_table end).
 
 -spec 'event'(input(), index()) -> parse_result().
 'event'(Input, Index) ->

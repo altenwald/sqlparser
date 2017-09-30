@@ -525,3 +525,9 @@ create_table_test() ->
                 #field{name = <<"username">>, type = {text, undefined}}
             ]
         }).
+
+drop_table_test() ->
+    ?assertEqual(
+        mysql_parser:parse("drop table my_table"),
+        #drop_table{table = #table{alias = <<"my_table">>,
+                                   name = <<"my_table">>}}).

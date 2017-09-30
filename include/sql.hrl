@@ -57,8 +57,12 @@
     null = true
 }).
 
+% DROP TABLE
+-record(drop_table, {table}).
+-type drop_table() :: #drop_table{}.
+
 -type sql() :: show() | select() | update() | delete() | insert() |
-               create_table().
+               create_table() | drop_table().
 
 % Database Administration Statements
 -record(management, {action :: action(), data :: account() | permission() }).
