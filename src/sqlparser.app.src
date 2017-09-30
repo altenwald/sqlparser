@@ -1,12 +1,8 @@
-{application, sqlparser, [
-    {description, "SQL Parser"},
-    {vsn, git},
-    {registered, []},
-    {applications, [
-        kernel,
-        stdlib
-    ]},
-    {maintainers, ["Manuel Rubio"]},
-    {licenses, ["LGPL 2.1"]},
-    {links, [{"Github", "https://github.com/altenwald/sqlparser"}]}
-]}.
+{application,sqlparser,
+             [{description,"SQL Parser"},
+              {vsn,"0.1.0"},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {maintainers,["Manuel Rubio"]},
+              {licenses,["LGPL 2.1"]},
+              {links,[{"Github","https://github.com/altenwald/sqlparser"}]}]}.

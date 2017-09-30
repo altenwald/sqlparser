@@ -1,4 +1,4 @@
-sql <- set_query / select_query / update_query / insert_query / delete_query / show_query / desc_query / use_query /
+sql <- set_query / select_query / update_query / insert_query / delete_query / show_query / desc_query / use_query / create_table_query /
     transaction_query / account_management_query ~;
 
 % --------------- USE
@@ -197,6 +197,50 @@ insert_values <- space? insert space into space table_general space values space
 `;
 insert_set <- space? insert space into space table_general space set space sets space? `
     #insert{table=lists:nth(6, Node), values=lists:nth(10, Node)}
+`;
+
+% ---------------- CREATE TABLE
+
+create_table_query <- space? create_table space table_general space? '(' space? fields space? ')' space? `
+    #create_table{table=lists:nth(4, Node), fields=lists:nth(8, Node)}
+`;
+
+fields <- head:field tail:( space? ',' space? field )* `
+    [proplists:get_value(head, Node)|[ lists:nth(4,I) || I <- proplists:get_value(tail, Node) ]]
+`;
+
+field <- key space? type (space (not_null / null))? (space default space param)? (space primary_key / unique_key)? `
+    [Name, _, Type, NIL, D, PUK] = Node,
+    Null = case NIL of
+        [] -> true;
+        [_, null] -> true;
+        [_, not_null] -> false
+    end,
+    case PUK of
+        [] ->
+            Primary = false,
+            Unique = false;
+        [_, primary_key] ->
+            Primary = true,
+            Unique = false;
+        [_, unique_key] ->
+            Primary = false,
+            Unique = true
+    end,
+    Default = case D of
+        [_, _, _, Def] -> Def;
+        [] -> undefined
+    end,
+    #field{name = Name, type = Type, default = Default, primary = Primary,
+           unique = Unique, null = Null}
+`;
+
+type <- type_integer / type_decimal / type_text / type_varchar ~;
+type_integer <- #(?i)int# / #(?i)integer# `integer`;
+type_decimal <- #(?i)decimal# `decimal`;
+type_text <- #(?i)text# `{text, undefined}`;
+type_varchar <- #(?i)varchar# space? '(' space? integer space? ')' `
+    {text, lists:nth(5, Node)}
 `;
 
 % ---------------- Account Management Statements
@@ -491,6 +535,7 @@ alter <- #(?i)alter# `alter`;
 alter_routine <- #(?i)alter +routine# `alter_routine`;
 create_routine <- #(?i)create +routine# `create_routine`;
 create_temp_tables <- #(?i)create +temporary +tables# `create_temp_tables`;
+create_table <- #(?i)create +table# `create_table`;
 event <- #(?i)event# `event`;
 file <- #(?i)file# `file`;
 grant_option <- #(?i)grant +option# `grant_option`;
@@ -507,6 +552,10 @@ super <- #(?i)super# `super`;
 trigger <- #(?i)trigger# `trigger`;
 process <- #(?i)process# `process`;
 param_question <- '?' `"?"`;
+primary_key <- #(?i)primary +key# / #(?i)key# `primary_key`;
+unique_key <- #(?i)unique +key# / #(?i)unique# `unique_key`;
+not_null <- #(?i)not +null# `not_null`;
+default <- #(?i)default# `default`;
 
 % complex types
 keys <- head:key tail:( space? ',' space? key )* `
@@ -562,7 +611,7 @@ float <- [0-9]* '.' [0-9]+ `
     end
 `;
 space <- [ \t\n\s\r]* ~;
-null <- [nN] [uU] [lL] [lL] `null`;
+null <- #(?i)null# `null`;
 
 `
 -include("../include/sql.hrl").

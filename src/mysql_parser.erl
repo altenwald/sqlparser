@@ -32,7 +32,7 @@ parse(Input) when is_binary(Input) ->
 
 -spec 'sql'(input(), index()) -> parse_result().
 'sql'(Input, Index) ->
-  p(Input, Index, 'sql', fun(I,D) -> (p_choose([fun 'set_query'/2, fun 'select_query'/2, fun 'update_query'/2, fun 'insert_query'/2, fun 'delete_query'/2, fun 'show_query'/2, fun 'desc_query'/2, fun 'use_query'/2, fun 'transaction_query'/2, fun 'account_management_query'/2]))(I,D) end, fun(Node, _Idx) ->Node end).
+  p(Input, Index, 'sql', fun(I,D) -> (p_choose([fun 'set_query'/2, fun 'select_query'/2, fun 'update_query'/2, fun 'insert_query'/2, fun 'delete_query'/2, fun 'show_query'/2, fun 'desc_query'/2, fun 'use_query'/2, fun 'create_table_query'/2, fun 'transaction_query'/2, fun 'account_management_query'/2]))(I,D) end, fun(Node, _Idx) ->Node end).
 
 -spec 'transaction_query'(input(), index()) -> parse_result().
 'transaction_query'(Input, Index) ->
@@ -305,6 +305,68 @@ parse(Input) when is_binary(Input) ->
 'insert_set'(Input, Index) ->
   p(Input, Index, 'insert_set', fun(I,D) -> (p_seq([p_optional(fun 'space'/2), fun 'insert'/2, fun 'space'/2, fun 'into'/2, fun 'space'/2, fun 'table_general'/2, fun 'space'/2, fun 'set'/2, fun 'space'/2, fun 'sets'/2, p_optional(fun 'space'/2)]))(I,D) end, fun(Node, _Idx) ->
     #insert{table=lists:nth(6, Node), values=lists:nth(10, Node)}
+ end).
+
+-spec 'create_table_query'(input(), index()) -> parse_result().
+'create_table_query'(Input, Index) ->
+  p(Input, Index, 'create_table_query', fun(I,D) -> (p_seq([p_optional(fun 'space'/2), fun 'create_table'/2, fun 'space'/2, fun 'table_general'/2, p_optional(fun 'space'/2), p_string(<<"(">>), p_optional(fun 'space'/2), fun 'fields'/2, p_optional(fun 'space'/2), p_string(<<")">>), p_optional(fun 'space'/2)]))(I,D) end, fun(Node, _Idx) ->
+    #create_table{table=lists:nth(4, Node), fields=lists:nth(8, Node)}
+ end).
+
+-spec 'fields'(input(), index()) -> parse_result().
+'fields'(Input, Index) ->
+  p(Input, Index, 'fields', fun(I,D) -> (p_seq([p_label('head', fun 'field'/2), p_label('tail', p_zero_or_more(p_seq([p_optional(fun 'space'/2), p_string(<<",">>), p_optional(fun 'space'/2), fun 'field'/2])))]))(I,D) end, fun(Node, _Idx) ->
+    [proplists:get_value(head, Node)|[ lists:nth(4,I) || I <- proplists:get_value(tail, Node) ]]
+ end).
+
+-spec 'field'(input(), index()) -> parse_result().
+'field'(Input, Index) ->
+  p(Input, Index, 'field', fun(I,D) -> (p_seq([fun 'key'/2, p_optional(fun 'space'/2), fun 'type'/2, p_optional(p_seq([fun 'space'/2, p_choose([fun 'not_null'/2, fun 'null'/2])])), p_optional(p_seq([fun 'space'/2, fun 'default'/2, fun 'space'/2, fun 'param'/2])), p_optional(p_choose([p_seq([fun 'space'/2, fun 'primary_key'/2]), fun 'unique_key'/2]))]))(I,D) end, fun(Node, _Idx) ->
+    [Name, _, Type, NIL, D, PUK] = Node,
+    Null = case NIL of
+        [] -> true;
+        [_, null] -> true;
+        [_, not_null] -> false
+    end,
+    case PUK of
+        [] ->
+            Primary = false,
+            Unique = false;
+        [_, primary_key] ->
+            Primary = true,
+            Unique = false;
+        [_, unique_key] ->
+            Primary = false,
+            Unique = true
+    end,
+    Default = case D of
+        [_, _, _, Def] -> Def;
+        [] -> undefined
+    end,
+    #field{name = Name, type = Type, default = Default, primary = Primary,
+           unique = Unique, null = Null}
+ end).
+
+-spec 'type'(input(), index()) -> parse_result().
+'type'(Input, Index) ->
+  p(Input, Index, 'type', fun(I,D) -> (p_choose([fun 'type_integer'/2, fun 'type_decimal'/2, fun 'type_text'/2, fun 'type_varchar'/2]))(I,D) end, fun(Node, _Idx) ->Node end).
+
+-spec 'type_integer'(input(), index()) -> parse_result().
+'type_integer'(Input, Index) ->
+  p(Input, Index, 'type_integer', fun(I,D) -> (p_choose([p_regexp(<<"(?i)int">>), p_regexp(<<"(?i)integer">>)]))(I,D) end, fun(_Node, _Idx) ->integer end).
+
+-spec 'type_decimal'(input(), index()) -> parse_result().
+'type_decimal'(Input, Index) ->
+  p(Input, Index, 'type_decimal', fun(I,D) -> (p_regexp(<<"(?i)decimal">>))(I,D) end, fun(_Node, _Idx) ->decimal end).
+
+-spec 'type_text'(input(), index()) -> parse_result().
+'type_text'(Input, Index) ->
+  p(Input, Index, 'type_text', fun(I,D) -> (p_regexp(<<"(?i)text">>))(I,D) end, fun(_Node, _Idx) ->{text, undefined} end).
+
+-spec 'type_varchar'(input(), index()) -> parse_result().
+'type_varchar'(Input, Index) ->
+  p(Input, Index, 'type_varchar', fun(I,D) -> (p_seq([p_regexp(<<"(?i)varchar">>), p_optional(fun 'space'/2), p_string(<<"(">>), p_optional(fun 'space'/2), fun 'integer'/2, p_optional(fun 'space'/2), p_string(<<")">>)]))(I,D) end, fun(Node, _Idx) ->
+    {text, lists:nth(5, Node)}
  end).
 
 -spec 'account_management_query'(input(), index()) -> parse_result().
@@ -908,6 +970,10 @@ end
 'create_temp_tables'(Input, Index) ->
   p(Input, Index, 'create_temp_tables', fun(I,D) -> (p_regexp(<<"(?i)create +temporary +tables">>))(I,D) end, fun(_Node, _Idx) ->create_temp_tables end).
 
+-spec 'create_table'(input(), index()) -> parse_result().
+'create_table'(Input, Index) ->
+  p(Input, Index, 'create_table', fun(I,D) -> (p_regexp(<<"(?i)create +table">>))(I,D) end, fun(_Node, _Idx) ->create_table end).
+
 -spec 'event'(input(), index()) -> parse_result().
 'event'(Input, Index) ->
   p(Input, Index, 'event', fun(I,D) -> (p_regexp(<<"(?i)event">>))(I,D) end, fun(_Node, _Idx) ->event end).
@@ -971,6 +1037,22 @@ end
 -spec 'param_question'(input(), index()) -> parse_result().
 'param_question'(Input, Index) ->
   p(Input, Index, 'param_question', fun(I,D) -> (p_string(<<"?">>))(I,D) end, fun(_Node, _Idx) ->"?" end).
+
+-spec 'primary_key'(input(), index()) -> parse_result().
+'primary_key'(Input, Index) ->
+  p(Input, Index, 'primary_key', fun(I,D) -> (p_choose([p_regexp(<<"(?i)primary +key">>), p_regexp(<<"(?i)key">>)]))(I,D) end, fun(_Node, _Idx) ->primary_key end).
+
+-spec 'unique_key'(input(), index()) -> parse_result().
+'unique_key'(Input, Index) ->
+  p(Input, Index, 'unique_key', fun(I,D) -> (p_choose([p_regexp(<<"(?i)unique +key">>), p_regexp(<<"(?i)unique">>)]))(I,D) end, fun(_Node, _Idx) ->unique_key end).
+
+-spec 'not_null'(input(), index()) -> parse_result().
+'not_null'(Input, Index) ->
+  p(Input, Index, 'not_null', fun(I,D) -> (p_regexp(<<"(?i)not +null">>))(I,D) end, fun(_Node, _Idx) ->not_null end).
+
+-spec 'default'(input(), index()) -> parse_result().
+'default'(Input, Index) ->
+  p(Input, Index, 'default', fun(I,D) -> (p_regexp(<<"(?i)default">>))(I,D) end, fun(_Node, _Idx) ->default end).
 
 -spec 'keys'(input(), index()) -> parse_result().
 'keys'(Input, Index) ->
@@ -1055,7 +1137,7 @@ end
 
 -spec 'null'(input(), index()) -> parse_result().
 'null'(Input, Index) ->
-  p(Input, Index, 'null', fun(I,D) -> (p_seq([p_charclass(<<"[nN]">>), p_charclass(<<"[uU]">>), p_charclass(<<"[lL]">>), p_charclass(<<"[lL]">>)]))(I,D) end, fun(_Node, _Idx) ->null end).
+  p(Input, Index, 'null', fun(I,D) -> (p_regexp(<<"(?i)null">>))(I,D) end, fun(_Node, _Idx) ->null end).
 
 
 

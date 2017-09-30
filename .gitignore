@@ -6,3 +6,5 @@ deps
 erl_crash.dump
 ebin
 .rebar
+cobertura.xml
+_build

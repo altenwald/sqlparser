@@ -38,12 +38,27 @@
 % INSERT
 -record(insert, {table, values}).
 
+-type insert() :: #insert{}.
+
 % DESCRIBE
 -record(describe, {table}).
 
--type insert() :: #insert{}.
+-type describe() :: #describe{}.
 
--type sql() :: show() | select() | update() | delete() | insert().
+% CREATE TABLE
+-record(create_table, {table, fields}).
+-type create_table() :: #create_table{}.
+-record(field, {
+    name,
+    type,
+    default,
+    unique = false,
+    primary = false,
+    null = true
+}).
+
+-type sql() :: show() | select() | update() | delete() | insert() |
+               create_table().
 
 % Database Administration Statements
 -record(management, {action :: action(), data :: account() | permission() }).

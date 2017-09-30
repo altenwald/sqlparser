@@ -512,3 +512,16 @@ update_where_test() ->
         }
     ),
     ok.
+
+create_table_test() ->
+    ?assertEqual(
+        mysql_parser:parse("create table my_table("
+                               "id int primary key, "
+                               "username text)"),
+        #create_table{
+            table = #table{alias = <<"my_table">>, name = <<"my_table">>},
+            fields = [
+                #field{name = <<"id">>, type = integer, primary = true},
+                #field{name = <<"username">>, type = {text, undefined}}
+            ]
+        }).
