@@ -1,5 +1,5 @@
-Overview
-========
+SQL Parser
+==========
 
 [![Build Status](https://img.shields.io/travis/altenwald/sqlparser/master.svg)](https://travis-ci.org/altenwald/sqlparser)
 [![Codecov](https://img.shields.io/codecov/c/github/altenwald/sqlparser.svg)](https://codecov.io/gh/altenwald/sqlparser)
@@ -15,7 +15,7 @@ If you want to use, only add this in `rebar.config` using [rebar3](https://rebar
 
 ```erlang
 {deps, [
-    {sqlparser, "0.1.0"}
+    {sqlparser, "0.2.0"}
 ]}.
 ```
 
