@@ -15,7 +15,7 @@ If you want to use, only add this in `rebar.config` using [rebar3](https://rebar
 
 ```erlang
 {deps, [
-    {sqlparser, "0.3.0"}
+    {sqlparser, "0.3.1"}
 ]}.
 ```
 
